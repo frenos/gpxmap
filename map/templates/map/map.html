@@ -1,0 +1,129 @@
+{% extends 'map/base.html' %}
+{% block content %}
+        <div class="card-panel col s12 m12">
+            {% if gpxObj %}<div class="card-title"><h3>{{ gpxObj.name }}</h3> <p>uploaded {{ gpxObj.uploadDate|timesince }} ago on {{ gpxObj.uploadDate|date:"SHORT_DATE_FORMAT" }}</p></div>{% endif %}
+            <div id="map" style="height: 650px;"></div>
+        </div>
+    <script>
+
+            var _getClosestPointIndex = function(lPoint, arrayLPoints) {
+                var distanceArray = [];
+                for ( var i = 0; i < arrayLPoints.length; i++ ) {
+                    distanceArray.push( lPoint.distanceTo(arrayLPoints[i]) );
+                }
+                return distanceArray.indexOf(  Math.min.apply(null, distanceArray) );
+            };
+
+          var map = L.map('map').setView([52.1428215, 7.3225525], 15);
+              L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              {
+                attribution: 'Map data &copy; <a href="http://www.osm.org">OpenStreetMap</a>'
+              }
+            ).addTo(map);
+          {% if specific %}
+
+              var gpx = "{{ gpxObj.file.url }}"; // URL to your GPX file or the GPX itself
+
+    var xmlDoc;
+
+    if(typeof window.DOMParser != "undefined") {
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.open("GET",gpx,false);
+        if (xmlhttp.overrideMimeType){
+            xmlhttp.overrideMimeType('text/xml');
+        }
+        xmlhttp.send();
+        xmlDoc=xmlhttp.responseXML;
+    }
+    else{
+        xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+        xmlDoc.async="false";
+        xmlDoc.load(xmlFile);
+    }
+
+    var LatLonArray=[]
+    var SpeedArray =[]
+    var AccuracyArray = []
+
+    var tracksegments = xmlDoc.getElementsByTagName( 'trkseg' );
+    for ( var i = 0, len_i = tracksegments.length; i < len_i; i++ ) {
+        currentTracksegment = tracksegments[i];
+        for(var j = 0, len_j = currentTracksegment.childNodes.length; j < len_j; j++)
+        {
+            currentTrackPt = currentTracksegment.childNodes[j];
+             if (currentTrackPt.nodeType === 1)
+            {
+              var accuracy = currentTrackPt.getElementsByTagName('accuracy')
+              for( var k = 0, len_k = accuracy.length; k < len_k; k++ )
+              {
+                if(accuracy[k].nodeType === 1){
+
+                      AccuracyArray.push(accuracy[k].firstChild.nodeValue)
+                }
+              }
+
+              var speed = currentTrackPt.getElementsByTagName('speed')
+              for( var k = 0, len_k = speed.length; k < len_k; k++ )
+              {
+                if(speed[k].nodeType === 1){
+
+                      SpeedArray.push(speed[k].firstChild.nodeValue)
+                }
+              }
+
+              LatLonArray.push(L.latLng({
+                lat: currentTrackPt.getAttribute('lat'),
+                lon: currentTrackPt.getAttribute('lon')
+              }));
+
+            }
+        }
+
+        hotlineData = []
+        for( var index = 0, len_index = LatLonArray.length; index < len_index; index++)
+        {
+          newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, AccuracyArray[index]]
+          hotlineData.push(newDataPoint)
+        }
+
+        var hotlineOptions = {
+      			min: Math.min.apply(null, AccuracyArray),
+      			max: Math.max.apply(null, AccuracyArray),
+      			palette: {
+      				0.0: '#008800',
+      				0.5: '#ffff00',
+      				1.0: '#ff0000'
+      			},
+      			weight: 3,
+      			outlineColor: '#000000',
+      			outlineWidth: 1
+		      }
+        var mypolyline =  L.hotline(hotlineData, hotlineOptions).
+          on('mouseover', function(e){
+            var index = _getClosestPointIndex(e.latlng, LatLonArray);
+             var popup = L.popup()
+                 .setLatLng(LatLonArray[index])
+                 .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m.</p>')
+                 .openOn(self.map);
+          }).addTo(map);
+          //reformat data for hotline
+
+        /*var mypolyline = L.polyline(LatLonArray,
+          {
+            color: 'blue',
+            opacity: 0.5,
+          }).
+                          on('mouseover', function(e){
+                            var index = _getClosestPointIndex(e.latlng, LatLonArray);
+                             var popup = L.popup()
+                                 .setLatLng(LatLonArray[index])
+                                 .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m.</p>')
+                                 .openOn(self.map);
+                          }).addTo(map);
+                          */
+        map.fitBounds(mypolyline.getBounds());
+    }
+
+          {% endif %}
+</script>
+{% endblock %}
