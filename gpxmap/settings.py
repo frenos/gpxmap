@@ -75,7 +75,7 @@ WSGI_APPLICATION = 'gpxmap.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASEDIR = os.path.join(BASE_DIR, '/db')
+DATABASEDIR = '/usr/src/app/db'
 
 DATABASES = {
     'default': {
