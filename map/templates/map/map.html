@@ -3,6 +3,7 @@
         <div class="card-panel col s12 m12">
             {% if gpxObj %}<div class="card-title"><h3>{{ gpxObj.name }}</h3> <p>uploaded {{ gpxObj.uploadDate|timesince }} ago on {{ gpxObj.uploadDate|date:"SHORT_DATE_FORMAT" }}</p></div>{% endif %}
             <div id="map" style="height: 650px;"></div>
+        <a href="#" onclick="dodownload('{{ gpxObj.name }}.json', JSON.stringify(routeJSON, null, 2))">Download as Route.</a>
         </div>
     <script>
 
@@ -108,6 +109,64 @@
           }).addTo(map);
           //reformat data for hotline
 
+          var routeInstructions = []
+          var totalLength = 0
+
+        var LonLatArray = []
+        for(var step=0; step < LatLonArray.length; step++) {
+            var point = [LatLonArray[step].lat, LatLonArray[step].lng]
+            LonLatArray.push(point)
+          }
+
+        for(var step=0; step < LatLonArray.length; step++){
+              if(step < LatLonArray.length-1){
+                var Point1 = turf.point([LatLonArray[step].lat, LatLonArray[step].lng])
+                var Point2 = turf.point([LatLonArray[step+1].lat, LatLonArray[step+1].lng])
+                var subPathlength = turf.distance(Point1, Point2) * 1000 //calculate with turf
+              }
+              else{
+                var subPathlength = 0;
+              }
+
+
+              var instructionCode = "0"
+              var streetName = "Path"
+
+              totalLength +=subPathlength
+              var indexPosition = step
+              var travelTime = 0
+              var formatedLength = subPathlength +"m"
+              var postTurnDir = "N"
+              var postTurnAzimuth = 0
+              var mode = 1
+              var preTurnDir = "N"
+              var preTurnAzimuth = 0
+              routeInstruction = [instructionCode, streetName, subPathlength,
+                                  indexPosition, travelTime, formatedLength,
+                                  postTurnDir, postTurnAzimuth, mode,
+                                  preTurnDir, preTurnAzimuth]
+
+
+              routeInstructions.push(routeInstruction);
+            }
+
+
+            var encodedPolyline = polyline.encode(LonLatArray, 5)
+
+        var routeJSON = {
+              "status" : 0,
+              "route_name" : ["route1"],
+              "status_message" : "Found route between points",
+              "route_geometry": encodedPolyline,
+              "found_alternative":false,
+              "route_summary": {
+                "end_point": "Endpoint",
+                "start_point": "Starpoint",
+                "total_time": 209,
+                "total_distance": totalLength
+              },
+              "route_instructions": routeInstructions
+            }
         /*var mypolyline = L.polyline(LatLonArray,
           {
             color: 'blue',
