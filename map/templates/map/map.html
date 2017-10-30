@@ -1,11 +1,18 @@
 {% extends 'map/base.html' %}
 {% block content %}
-        <div class="card-panel col s12 m12">
+    <div class="row">
+        <div class="card-panel col s10 m8">
             {% if gpxObj %}<div class="card-title"><h3>{{ gpxObj.name }}</h3> <p>uploaded {{ gpxObj.uploadDate|timesince }} ago on {{ gpxObj.uploadDate|date:"SHORT_DATE_FORMAT" }}</p></div>{% endif %}
             <div id="map" style="height: 650px;"></div>
         <a href="#" onclick="dodownload('{{ gpxObj.name }}.json', JSON.stringify(routeJSON, null, 2))">Download as Route.</a>
         </div>
+        <div class="card-panel col s2 m4" style="overflow-y: scroll; height: 100vh;">
+            <ol id="pointslist" class="collection">
+            </ol>
+        </div>
+    </div>
     <script>
+        activePoint = 0
 
             var _getClosestPointIndex = function(lPoint, arrayLPoints) {
                 var distanceArray = [];
@@ -77,15 +84,52 @@
                 lon: currentTrackPt.getAttribute('lon')
               }));
 
+
             }
         }
 
         hotlineData = []
+        var pointList = document.getElementById("pointslist");
         for( var index = 0, len_index = LatLonArray.length; index < len_index; index++)
         {
           newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, AccuracyArray[index]]
           hotlineData.push(newDataPoint)
+            var newli = document.createElement("li");
+            newli.className = "collection-item";
+            (function(idx){
+            newli.onclick = function (index) {
+                var popup = L.popup()
+                    .setLatLng(LatLonArray[idx])
+                    .setContent('<div><div class="chip blue darken-4">'+idx+'</div><p>Speed: ' + SpeedArray[idx] + 'm/s<br />Accuracy: ' + AccuracyArray[idx] + 'm.</p></div>')
+                    .openOn(self.map);
+                map.flyTo(popup.getLatLng(), 18);
+                activePoint = idx+1;
+            };
+            })(index);
+
+
+            var outputString = "Accuracy: "+ AccuracyArray[index]+" | Speed: "+SpeedArray[index]
+            newli.appendChild(document.createTextNode(outputString));
+            pointList.appendChild(newli);
         }
+
+        // define a handler
+        function doc_keyUp(e) {
+
+            // left
+            if (e.keyCode == 37) {
+                // call your function to do the thing
+                activePoint = activePoint-1;
+                pointList.childNodes.item(activePoint).click();
+            }
+            else if (e.keyCode == 39){
+                activePoint = activePoint+1;
+                pointList.childNodes.item(activePoint).click();
+            }
+        }
+        // register the handler
+        document.addEventListener('keydown', doc_keyUp, false);
+
 
         var hotlineOptions = {
       			min: Math.min.apply(null, AccuracyArray),
@@ -100,7 +144,7 @@
       			outlineWidth: 1
 		      }
         var mypolyline =  L.hotline(hotlineData, hotlineOptions).
-          on('mouseover', function(e){
+          on('click', function(e){
             var index = _getClosestPointIndex(e.latlng, LatLonArray);
              var popup = L.popup()
                  .setLatLng(LatLonArray[index])

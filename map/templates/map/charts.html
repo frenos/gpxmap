@@ -1,0 +1,352 @@
+{% extends 'map/base.html' %}
+{% block content %}
+    <div class="row">
+        <div class="card-panel col s12 m12">
+            {% if gpxObj %}<div class="card-title"><h3>Charts for {{ gpxObj.name }}</h3> <p>uploaded {{ gpxObj.uploadDate|timesince }} ago on {{ gpxObj.uploadDate|date:"SHORT_DATE_FORMAT" }}</p></div>{% endif %}
+        </div>
+        <div class="card-panel col s12 m12">
+            <canvas id="speed"></canvas>
+        </div>
+        <div class="card-panel col s12 m12">
+            {% if not gpxObj.xmlfile %}
+                <p>There was no xml uploaded for this path.</p>
+            {% endif %}
+            <canvas id="instruction"></canvas>
+        </div>
+        <div class="card-panel col s12 m12">
+            <canvas id="accuracy"></canvas>
+        </div>
+    </div>
+    <script>
+        //prepare data for chart
+
+        var gpx = "{{ gpxObj.file.url }}"; // URL to your GPX file or the GPX itself
+
+        var xmlDoc;
+
+        if(typeof window.DOMParser != "undefined") {
+            xmlhttp=new XMLHttpRequest();
+            xmlhttp.open("GET",gpx,false);
+            if (xmlhttp.overrideMimeType){
+                xmlhttp.overrideMimeType('text/xml');
+            }
+            xmlhttp.send();
+            xmlDoc=xmlhttp.responseXML;
+        }
+        else{
+            xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+            xmlDoc.async="false";
+            xmlDoc.load(gpx);
+        }
+
+        var SpeedArray =[]
+        var AccuracyArray = []
+        var TimestampArray = []
+        var ptArray = []
+        var tracksegments = xmlDoc.getElementsByTagName( 'trkseg' );
+        for ( var i = 0, len_i = tracksegments.length; i < len_i; i++ ) {
+            currentTracksegment = tracksegments[i];
+            for(var j = 0, len_j = currentTracksegment.childNodes.length; j < len_j; j++) {
+                currentTrackPt = currentTracksegment.childNodes[j];
+                if (currentTrackPt.nodeType === 1) {
+                    var accuracy = currentTrackPt.getElementsByTagName('accuracy')
+                    for (var k = 0, len_k = accuracy.length; k < len_k; k++) {
+                        if (accuracy[k].nodeType === 1) {
+
+                            AccuracyArray.push(accuracy[k].firstChild.nodeValue)
+                        }
+                    }
+
+                    var speed = currentTrackPt.getElementsByTagName('speed')
+                    for (var k = 0, len_k = speed.length; k < len_k; k++) {
+                        if (speed[k].nodeType === 1) {
+
+                            SpeedArray.push(speed[k].firstChild.nodeValue)
+                        }
+                    }
+
+                    var timestamp = currentTrackPt.getElementsByTagName('time')
+                    for (var k = 0, len_k = timestamp.length; k < len_k; k++) {
+                        if (timestamp[k].nodeType === 1) {
+
+                            TimestampArray.push(timestamp[k].firstChild.nodeValue)
+                        }
+                    }
+                }
+            }
+
+        }
+
+        {% if gpxObj.xmlfile %}
+        var xmlFile = "{{ gpxObj.xmlfile.url }}"; // URL to your GPX file or the GPX itself
+
+        var xmlDoc;
+
+        if(typeof window.DOMParser != "undefined") {
+            xmlhttp=new XMLHttpRequest();
+            xmlhttp.open("GET",xmlFile,false);
+            if (xmlhttp.overrideMimeType){
+                xmlhttp.overrideMimeType('text/xml');
+            }
+            xmlhttp.send();
+            xmlDoc=xmlhttp.responseXML;
+        }
+        else{
+            xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+            xmlDoc.async="false";
+            xmlDoc.load(xmlFile);
+        }
+
+        var instructionData = [];
+        var instructions = xmlDoc.getElementsByTagName( 'instruction' );
+        for ( var i = 0, len_i = instructions.length; i < len_i; i++ ) {
+            currentInstruction = instructions[i];
+
+            //process degree like the app does
+            var degree = currentInstruction.getAttribute('degree');
+            degree = parseFloat(degree);
+            if (degree < 0) {
+                degree = degree +360;
+            }
+            degree = Math.abs(degree);
+
+            instructionData.push({
+                x: new Date(currentInstruction.getAttribute('timestamp')),
+                y: degree
+            });
+        }
+        {% endif %}
+        // end prepare data for chart
+
+
+
+
+
+        var ctx = document.getElementById('speed').getContext('2d');
+        var chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                labels: TimestampArray,
+                datasets: [{
+                    label: "Speed",
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: SpeedArray,
+                    fill: false,
+                    cubicInterpolationMode: true,
+                    showLine: false,
+                }
+                ]
+            },
+
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                title:{
+                    display:true,
+                    text:'Walkingspeed in m/s over time'
+                },
+                tooltips: {
+                    mode: 'nearest',
+                    intersect: true,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        type: 'time',
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Timestamp'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Speed'
+                        }
+                    }]
+                },
+                // Container for pan options
+                pan: {
+                    // Boolean to enable panning
+                    enabled: true,
+
+                    // Panning directions. Remove the appropriate direction to disable
+                    // Eg. 'y' would only allow panning in the y direction
+                    mode: 'xy',
+                },
+
+                // Container for zoom options
+                zoom: {
+                    // Boolean to enable zooming
+                    enabled: true,
+
+                    // Zooming directions. Remove the appropriate direction to disable
+                    // Eg. 'y' would only allow zooming in the y direction
+                    mode: 'xy',
+                }
+            }
+        });
+
+        {% if gpxObj.xmlfile %}
+        var ctx = document.getElementById('instruction').getContext('2d');
+        var chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                datasets: [{
+                    label: "Degree",
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: instructionData,
+                    fill: false,
+                    cubicInterpolationMode: true,
+                    showLine: false,
+                }
+                ]
+            },
+
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                title:{
+                    display:true,
+                    text:'Instructions send in degree clockwise'
+                },
+                tooltips: {
+                    mode: 'nearest',
+                    intersect: true,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        type: 'time',
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Timestamp'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Degree'
+                        }
+                    }]
+                },
+                // Container for pan options
+                pan: {
+                    // Boolean to enable panning
+                    enabled: true,
+
+                    // Panning directions. Remove the appropriate direction to disable
+                    // Eg. 'y' would only allow panning in the y direction
+                    mode: 'xy',
+                },
+
+                // Container for zoom options
+                zoom: {
+                    // Boolean to enable zooming
+                    enabled: true,
+
+                    // Zooming directions. Remove the appropriate direction to disable
+                    // Eg. 'y' would only allow zooming in the y direction
+                    mode: 'xy',
+                }
+            }
+        });
+        {% endif %}
+
+        var ctx = document.getElementById('accuracy').getContext('2d');
+        var chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                labels: TimestampArray,
+                datasets: [{
+                    label: "Accuracy",
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: AccuracyArray,
+                    fill: false,
+                    cubicInterpolationMode: true,
+                    showLine: false,
+                }
+                ]
+            },
+
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                title:{
+                    display:true,
+                    text:'GPS accuracy in meters over time'
+                },
+                tooltips: {
+                    mode: 'nearest',
+                    intersect: true,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        type: 'time',
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Timestamp'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Accuracy'
+                        }
+                    }]
+                },
+                // Container for pan options
+                pan: {
+                    // Boolean to enable panning
+                    enabled: true,
+
+                    // Panning directions. Remove the appropriate direction to disable
+                    // Eg. 'y' would only allow panning in the y direction
+                    mode: 'xy',
+                },
+
+                // Container for zoom options
+                zoom: {
+                    // Boolean to enable zooming
+                    enabled: true,
+
+                    // Zooming directions. Remove the appropriate direction to disable
+                    // Eg. 'y' would only allow zooming in the y direction
+                    mode: 'xy',
+                }
+            }
+        });
+
+    </script>
+{% endblock %}

@@ -31,3 +31,11 @@ class GpxAdd(TemplateView):
         else:
             args = {'form': form, 'text': 'Form was not valid!', 'status': True, 'nbar': 'gpx'}
         return render(request, self.template_name, args)
+
+class ChartView(TemplateView):
+
+    template_name = 'map/charts.html'
+    def get(self, request, gpxid):
+        gpxObj = GpxObject.objects.get(pk=gpxid)
+        args = {'gpxObj': gpxObj, 'specific': True, 'nbar': 'chart'}
+        return render(request, self.template_name, args)

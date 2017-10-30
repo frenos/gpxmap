@@ -15,7 +15,9 @@
     <script src="{% static 'js/polyline.js' %}"></script>
     <script src="{% static 'js/download.js' %}"></script>
     <script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
-  <!--Let browser know website is optimized for mobile-->
+    <script src="{% static 'js/Chart.bundle.js' %}"></script>
+    <script src="{% static 'js/chartjs-plugin-zoom.js' %}"></script>
+    <!--Let browser know website is optimized for mobile-->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
@@ -25,6 +27,9 @@
       <p><a href="#" class="brand-logo left">
         <i class="material-icons">map</i>GPXMap</a></p>
       <ul id="nav-mobile" class="right hide-on-med-and-down">
+        {% if gpxObj %}
+            <li class="{% if nbar == 'chart' %} active {% endif %}"><a href="{% url 'gpx:Charts' gpxObj.pk %}">Charts</a> </li>
+        {% endif %}
         <li class="{% if nbar == 'gpx' %}active {% endif %}"><a href="{% url 'gpx:Gpxlist' %}">GPX</a></li>
         <li class="{% if nbar == 'map' %}active {% endif %}"><a href="{% url 'map:Map' %}">Map</a></li>
       </ul>

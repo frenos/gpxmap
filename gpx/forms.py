@@ -3,4 +3,4 @@ from .models import GpxObject
 class GpxAddForm(ModelForm):
     class Meta:
         model = GpxObject
-        fields = ['name', 'file']
+        fields = ['name', 'file', 'xmlfile']

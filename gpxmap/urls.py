@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^map/', include('map.urls', namespace='mapNs', app_name='map')),
     url(r'^', include('gpx.urls', namespace='gpxNs', app_name='gpx')),
+    url(r'^protect/', include('simple_auth.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
