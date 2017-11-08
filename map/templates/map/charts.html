@@ -42,7 +42,7 @@
         var SpeedArray =[]
         var AccuracyArray = []
         var TimestampArray = []
-        var ptArray = []
+        var LatLonArray = []
         var tracksegments = xmlDoc.getElementsByTagName( 'trkseg' );
         for ( var i = 0, len_i = tracksegments.length; i < len_i; i++ ) {
             currentTracksegment = tracksegments[i];
@@ -64,6 +64,11 @@
                             SpeedArray.push(speed[k].firstChild.nodeValue)
                         }
                     }
+                    LatLonArray.push(L.latLng({
+                      lat: currentTrackPt.getAttribute('lat'),
+                      lon: currentTrackPt.getAttribute('lon')
+                  }));
+
 
                     var timestamp = currentTrackPt.getElementsByTagName('time')
                     for (var k = 0, len_k = timestamp.length; k < len_k; k++) {
@@ -75,6 +80,32 @@
                 }
             }
 
+        }
+
+        var distanceArray = []
+        var timespanArray = []
+        var timespanTSArray = []
+       for(var step=0; step < LatLonArray.length; step++) {
+           if (step < LatLonArray.length - 1) {
+               var Point1 = turf.point([LatLonArray[step].lat, LatLonArray[step].lng])
+               var Point2 = turf.point([LatLonArray[step + 1].lat, LatLonArray[step + 1].lng])
+               distanceArray.push(turf.distance(Point1, Point2) * 1000) //calculate with
+               var dif = (Date.parse(TimestampArray[step+1]) - Date.parse(TimestampArray[step]))/1000.0
+               timespanArray.push(dif)
+               timespanTSArray.push(TimestampArray[step+1])
+           }
+       }
+
+       var calculatedSpeedArray = []
+
+        for(var step=0; step < distanceArray.length; step++)
+        {
+            var calculatedSpeed = distanceArray[step]/timespanArray[step]
+            //cap speed
+            if (calculatedSpeed > 5){
+                calculatedSpeed = 5
+            }
+            calculatedSpeedArray.push(calculatedSpeed)
         }
 
         {% if gpxObj.xmlfile %}
@@ -138,7 +169,16 @@
                     fill: false,
                     cubicInterpolationMode: true,
                     showLine: false,
-                }
+                },
+                {
+                label: "Speed calculated",
+                backgroundColor: 'rgb(54, 162, 235)',
+                borderColor: 'rgb(54, 162, 235)',
+                data: calculatedSpeedArray,
+                fill: false,
+                cubicInterpolationMode: true,
+                showLine: false,
+            }
                 ]
             },
 
