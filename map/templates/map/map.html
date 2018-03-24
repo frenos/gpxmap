@@ -52,6 +52,8 @@
     var LatLonArray=[]
     var SpeedArray =[]
     var AccuracyArray = []
+    var DirectionArray = []
+
 
     var tracksegments = xmlDoc.getElementsByTagName( 'trkseg' );
     for ( var i = 0, len_i = tracksegments.length; i < len_i; i++ ) {
@@ -79,6 +81,14 @@
                 }
               }
 
+               var direction = currentTrackPt.getElementsByTagName('direction')
+              for( var k = 0, len_k = direction.length; k < len_k; k++ )
+              {
+                if(direction[k].nodeType === 1){
+
+                      DirectionArray.push(direction[k].firstChild.nodeValue)
+                }
+              }
               LatLonArray.push(L.latLng({
                 lat: currentTrackPt.getAttribute('lat'),
                 lon: currentTrackPt.getAttribute('lon')
@@ -92,7 +102,7 @@
         var pointList = document.getElementById("pointslist");
         for( var index = 0, len_index = LatLonArray.length; index < len_index; index++)
         {
-          newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, AccuracyArray[index]]
+          newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, DirectionArray[index]]
           hotlineData.push(newDataPoint)
             var newli = document.createElement("li");
             newli.className = "collection-item";
@@ -100,7 +110,7 @@
             newli.onclick = function (index) {
                 var popup = L.popup()
                     .setLatLng(LatLonArray[idx])
-                    .setContent('<div><div class="chip blue darken-4">'+idx+'</div><p>Speed: ' + SpeedArray[idx] + 'm/s<br />Accuracy: ' + AccuracyArray[idx] + 'm.</p></div>')
+                    .setContent('<div><div class="chip blue darken-4">'+idx+'</div><p>Speed: ' + SpeedArray[idx] + 'm/s<br />Accuracy: ' + AccuracyArray[idx] + 'm. <br /> Direction: ' +DirectionArray[idx]+ '</p></div>')
                     .openOn(self.map);
                 map.flyTo(popup.getLatLng(), 18);
                 activePoint = idx+1;
@@ -108,7 +118,7 @@
             })(index);
 
 
-            var outputString = "Accuracy: "+ AccuracyArray[index]+" | Speed: "+SpeedArray[index]
+            var outputString = "Accuracy: "+ AccuracyArray[index]+" | Speed: "+SpeedArray[index] +" | Direction:" +DirectionArray[index]
             newli.appendChild(document.createTextNode(outputString));
             pointList.appendChild(newli);
         }
@@ -132,12 +142,15 @@
 
 
         var hotlineOptions = {
-      			min: Math.min.apply(null, AccuracyArray),
-      			max: Math.max.apply(null, AccuracyArray),
+      			min: Math.min.apply(null, 0),
+      			max: Math.max.apply(null, 360),
       			palette: {
-      				0.0: '#008800',
-      				0.5: '#ffff00',
-      				1.0: '#ff0000'
+      			    0.0:'#008800',
+      				0.08: '#ffff00',
+                    0.3: '#ff0000',
+      				0.69: '#fff000',
+      				0.91: '#008800',
+                    1.0: '#008800'
       			},
       			weight: 3,
       			outlineColor: '#000000',
