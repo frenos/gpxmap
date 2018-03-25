@@ -1,4 +1,4 @@
-django
+django==1.11.11
 django-simple-auth
 pillow
 matplotlib

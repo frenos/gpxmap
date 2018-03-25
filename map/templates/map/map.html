@@ -142,8 +142,8 @@
 
 
         var hotlineOptions = {
-      			min: Math.min.apply(null, 0),
-      			max: Math.max.apply(null, 360),
+      			min: 0,
+      			max: 360,
       			palette: {
       			    0.0:'#008800',
       				0.08: '#ffff00',
@@ -161,7 +161,7 @@
             var index = _getClosestPointIndex(e.latlng, LatLonArray);
              var popup = L.popup()
                  .setLatLng(LatLonArray[index])
-                 .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m.</p>')
+                 .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m. <br />Direction: '+DirectionArray[index]+'</p>')
                  .openOn(self.map);
           }).addTo(map);
           //reformat data for hotline
