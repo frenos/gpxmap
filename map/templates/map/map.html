@@ -3,6 +3,10 @@
     <div class="row">
         <div class="card-panel col s10 m8">
             {% if gpxObj %}<div class="card-title"><h3>{{ gpxObj.name }}</h3> <p>uploaded {{ gpxObj.uploadDate|timesince }} ago on {{ gpxObj.uploadDate|date:"SHORT_DATE_FORMAT" }}</p></div>{% endif %}
+            <div class="row">
+                <div class="col s6"><select class="browser-default" id="hotlineselect" onchange="createHotline()"><option>Directions</option><option>Speed</option><option>Accuracy</option></select></div>
+                <div class="col s6"><select class="browser-default"><option>Path 1</option><option>Path 2</option><option>Path 3</option></select></div>
+            </div>
             <div id="map" style="height: 650px;"></div>
         <a href="#" onclick="dodownload('{{ gpxObj.name }}.json', JSON.stringify(routeJSON, null, 2))">Download as Route.</a>
         </div>
@@ -12,6 +16,82 @@
         </div>
     </div>
     <script>
+
+    function createHotline() {
+        selectElement = document.getElementById("hotlineselect");
+        console.log(selectElement.value);
+        map.removeLayer(mypolyline);
+        if (selectElement.value == 'Directions'){
+            var hotlineOptions = {
+      			min: 0,
+      			max: 360,
+      			palette: {
+      			    0.0:'#008800',
+      				0.08: '#ffff00',
+                    0.3: '#ff0000',
+      				0.69: '#fff000',
+      				0.91: '#008800',
+                    1.0: '#008800'
+      			},
+      			weight: 3,
+      			outlineColor: '#000000',
+      			outlineWidth: 1
+		      }
+		      hotlineData = createHotlineData('direction');
+        mypolyline =  L.hotline(hotlineData, hotlineOptions).
+          on('click', function(e){
+            var index = _getClosestPointIndex(e.latlng, LatLonArray);
+             var popup = L.popup()
+                 .setLatLng(LatLonArray[index])
+                 .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m. <br />Direction: '+DirectionArray[index]+'</p>')
+                 .openOn(self.map);
+          }).addTo(map).bringToFront();
+        }else if (selectElement.value == 'Speed'){
+                    var hotlineOptions = {
+                        min: Math.min.apply(null, SpeedArray),
+                        max: Math.max.apply(null, SpeedArray),
+                        palette: {
+                            0.0: '#ff0000',
+                            0.5: '#ffff00',
+                            1.0: '#008800'
+                        },
+                        weight: 3,
+                        outlineColor: '#000000',
+                        outlineWidth: 1
+                      }
+                    hotlineData = createHotlineData('speed');
+                    mypolyline =  L.hotline(hotlineData, hotlineOptions).
+                      on('click', function(e){
+                        var index = _getClosestPointIndex(e.latlng, LatLonArray);
+                         var popup = L.popup()
+                             .setLatLng(LatLonArray[index])
+                             .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m. <br />Direction: '+DirectionArray[index]+'</p>')
+                             .openOn(self.map);
+                      }).addTo(map).bringToFront();
+        } else if (selectElement.value == 'Accuracy'){
+                    var hotlineOptions = {
+                        min: Math.min.apply(null, AccuracyArray),
+                        max: Math.max.apply(null, AccuracyArray),
+                        palette: {
+                            0.0: '#008800',
+                            0.5: '#ffff00',
+                            1.0: '#ff0000'
+                        },
+                        weight: 3,
+                        outlineColor: '#000000',
+                        outlineWidth: 1
+                      }
+                    hotlineData = createHotlineData('accuracy');
+                    mypolyline =  L.hotline(hotlineData, hotlineOptions).
+                      on('click', function(e){
+                        var index = _getClosestPointIndex(e.latlng, LatLonArray);
+                         var popup = L.popup()
+                             .setLatLng(LatLonArray[index])
+                             .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m. <br />Direction: '+DirectionArray[index]+'</p>')
+                             .openOn(self.map);
+                      }).addTo(map).bringToFront();
+        }
+    }
         activePoint = 0
 
             var _getClosestPointIndex = function(lPoint, arrayLPoints) {
@@ -28,6 +108,7 @@
                 attribution: 'Map data &copy; <a href="http://www.osm.org">OpenStreetMap</a>'
               }
             ).addTo(map);
+
           {% if specific %}
 
               var gpx = "{{ gpxObj.file.url }}"; // URL to your GPX file or the GPX itself
@@ -98,12 +179,54 @@
             }
         }
 
-        hotlineData = []
+        function createAccuracyLayer(){
+            accuracyCircles = []
+            for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
+                    var newAccuracyPoint = new L.Circle([LatLonArray[index].lat, LatLonArray[index].lng], {
+                        color: 'blue',
+                        stroke: false,
+                        fillOpacity: 0.05,
+                        fillColor: '#008ba3',
+                        radius: AccuracyArray[index],
+                    }).addTo(map);
+                    accuracyCircles.push(newAccuracyPoint);
+                }
+            return accuracyCircles;
+        }
+
+        function createHotlineData( hotlineType)
+        {
+            hotlineData = []
+            if (hotlineType == "direction")
+            {
+                for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
+                    newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, DirectionArray[index]]
+                    hotlineData.push(newDataPoint)
+                }
+            }
+            else if (hotlineType == "speed")
+            {
+                for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
+                    newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, SpeedArray[index]]
+                    hotlineData.push(newDataPoint)
+                }
+            }
+            else if (hotlineType == "accuracy")
+            {
+                for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
+                    newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, AccuracyArray[index]]
+                    hotlineData.push(newDataPoint)
+                }
+            }
+            return hotlineData;
+        }
+
+        hotlineData = createHotlineData("direction")
+
         var pointList = document.getElementById("pointslist");
         for( var index = 0, len_index = LatLonArray.length; index < len_index; index++)
         {
           newDataPoint = [LatLonArray[index].lat, LatLonArray[index].lng, DirectionArray[index]]
-          hotlineData.push(newDataPoint)
             var newli = document.createElement("li");
             newli.className = "collection-item";
             (function(idx){
@@ -140,7 +263,6 @@
         // register the handler
         document.addEventListener('keydown', doc_keyUp, false);
 
-
         var hotlineOptions = {
       			min: 0,
       			max: 360,
@@ -156,19 +278,19 @@
       			outlineColor: '#000000',
       			outlineWidth: 1
 		      }
-        var mypolyline =  L.hotline(hotlineData, hotlineOptions).
+        mypolyline =  L.hotline(hotlineData, hotlineOptions).
           on('click', function(e){
             var index = _getClosestPointIndex(e.latlng, LatLonArray);
              var popup = L.popup()
                  .setLatLng(LatLonArray[index])
                  .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m. <br />Direction: '+DirectionArray[index]+'</p>')
                  .openOn(self.map);
-          }).addTo(map);
+          }).addTo(map).bringToFront();
           //reformat data for hotline
 
           var routeInstructions = []
           var totalLength = 0
-
+        var accuracyCircles = createAccuracyLayer()
         var LonLatArray = []
         for(var step=0; step < LatLonArray.length; step++) {
             var point = [LatLonArray[step].lat, LatLonArray[step].lng]
@@ -224,19 +346,6 @@
               },
               "route_instructions": routeInstructions
             }
-        /*var mypolyline = L.polyline(LatLonArray,
-          {
-            color: 'blue',
-            opacity: 0.5,
-          }).
-                          on('mouseover', function(e){
-                            var index = _getClosestPointIndex(e.latlng, LatLonArray);
-                             var popup = L.popup()
-                                 .setLatLng(LatLonArray[index])
-                                 .setContent('<p>Speed: '+ SpeedArray[index] +'m/s<br />Accuracy: '+ AccuracyArray[index] +'m.</p>')
-                                 .openOn(self.map);
-                          }).addTo(map);
-                          */
         map.fitBounds(mypolyline.getBounds());
     }
 
