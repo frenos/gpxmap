@@ -178,17 +178,19 @@
 
             }
         }
-
+        var accuracyCircles = createAccuracyLayer()
         function createAccuracyLayer(){
             accuracyCircles = []
             for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
                     var newAccuracyPoint = new L.Circle([LatLonArray[index].lat, LatLonArray[index].lng], {
                         color: 'blue',
                         stroke: false,
-                        fillOpacity: 0.05,
-                        fillColor: '#008ba3',
+                        fillOpacity: 0.03,
+                        fillRule: "nonzero",
+                        fillColor: '#a38134',
                         radius: AccuracyArray[index],
-                    }).addTo(map);
+                        interactive: false,
+                    }).addTo(map).bringToBack(newAccuracyPoint);
                     accuracyCircles.push(newAccuracyPoint);
                 }
             return accuracyCircles;
@@ -290,7 +292,6 @@
 
           var routeInstructions = []
           var totalLength = 0
-        var accuracyCircles = createAccuracyLayer()
         var LonLatArray = []
         for(var step=0; step < LatLonArray.length; step++) {
             var point = [LatLonArray[step].lat, LatLonArray[step].lng]
