@@ -183,9 +183,8 @@
             accuracyCircles = []
             for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
                     var newAccuracyPoint = new L.Circle([LatLonArray[index].lat, LatLonArray[index].lng], {
-                        color: 'blue',
                         stroke: false,
-                        fillOpacity: 0.03,
+                        fillOpacity: 0.10,
                         fillRule: "nonzero",
                         fillColor: '#a38134',
                         radius: AccuracyArray[index],
