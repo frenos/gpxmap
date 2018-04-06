@@ -5,10 +5,14 @@
             {% if gpxObj %}<div class="card-title"><h3>{{ gpxObj.name }}</h3> <p>uploaded {{ gpxObj.uploadDate|timesince }} ago on {{ gpxObj.uploadDate|date:"SHORT_DATE_FORMAT" }}</p></div>{% endif %}
             <div class="row">
                 <div class="col s6"><select class="browser-default" id="hotlineselect" onchange="createHotline()"><option>Directions</option><option>Speed</option><option>Accuracy</option></select></div>
-                <div class="col s6"><select class="browser-default"><option>Path 1</option><option>Path 2</option><option>Path 3</option></select></div>
+                <div class="col s6"><select class="browser-default" id="pathselect" onchange="createPath()"><option>Path 1</option><option>Path 2</option><option>Path 3</option></select></div>
             </div>
             <div id="map" style="height: 650px;"></div>
         <a href="#" onclick="dodownload('{{ gpxObj.name }}.json', JSON.stringify(routeJSON, null, 2))">Download as Route.</a>
+            <div class="row">
+                <div class="col s10"><input id="opacitySlider" type="range" min="0" max="1" step="0.001" oninput="sliderChange(this.value)"></div>
+                <div class="col s2"><p id="sliderValue">0</p></div>
+            </div>
         </div>
         <div class="card-panel col s2 m4" style="overflow-y: scroll; height: 100vh;">
             <ol id="pointslist" class="collection">
@@ -16,6 +20,14 @@
         </div>
     </div>
     <script>
+
+    function sliderChange(val) {
+        document.getElementById('sliderValue').innerHTML = val;
+        accuracyCircles.forEach(function (accuracyCircle) {
+            map.removeLayer(accuracyCircle)
+        })
+        accuracyCircles = createAccuracyLayer()
+    }
 
     function createHotline() {
         selectElement = document.getElementById("hotlineselect");
@@ -92,6 +104,38 @@
                       }).addTo(map).bringToFront();
         }
     }
+
+    function createPath() {
+        selectElement = document.getElementById("pathselect");
+        console.log(selectElement.value);
+        map.removeLayer(currentPath);
+        if (selectElement.value == 'Path 1'){
+            var pathPolyline = "g|y}Hsczh@DPN`@HRTTLLZVXPJAFe@Dy@Bk@LgA@KLFJFJBJBHAJc@Rc@Na@Lq@Hi@Jg@IQKQw@i@OUOQKQ"
+
+            currentPath =  L.Polyline.fromEncoded(pathPolyline, {
+                color : 'red',
+                smoothFactor: 0.0,
+                opacity: 0.5
+            }).addTo(map).bringToFront();
+        }else if (selectElement.value == 'Path 2'){
+            var pathPolyline = "e|y}Hiczh@P`@D^QJE\\KZO]MO]Qu@aAU]KWCg@Ac@?y@Ek@?q@?u@AqA"
+
+            currentPath =  L.Polyline.fromEncoded(pathPolyline, {
+                color : 'blue',
+                smoothFactor: 0.0,
+                opacity: 0.5
+            }).addTo(map).bringToFront();
+        } else if (selectElement.value == 'Path 3'){
+                    var pathPolyline = "cjz}Hefzh@H[Jc@JK\\Kf@?PQT\\JNVVpAjA??TJCBKZKTEd@GVMf@A`@?VEl@C`@CZCj@?HBALA`@DNFCN@R"
+
+            currentPath =  L.Polyline.fromEncoded(pathPolyline, {
+                color : 'green',
+                smoothFactor: 0.0,
+                opacity: 0.5
+            }).addTo(map).bringToFront();
+        }
+    }
+
         activePoint = 0
 
             var _getClosestPointIndex = function(lPoint, arrayLPoints) {
@@ -178,13 +222,16 @@
 
             }
         }
-        var accuracyCircles = createAccuracyLayer()
+        accuracyCircles = createAccuracyLayer()
+
         function createAccuracyLayer(){
+            sliderElement = document.getElementById('opacitySlider');
+            var accuracyOpacity = sliderElement.value
             accuracyCircles = []
             for( var index = 0, len_index = LatLonArray.length; index < len_index; index++) {
                     var newAccuracyPoint = new L.Circle([LatLonArray[index].lat, LatLonArray[index].lng], {
                         stroke: false,
-                        fillOpacity: 0.10,
+                        fillOpacity: accuracyOpacity,
                         fillRule: "nonzero",
                         fillColor: '#a38134',
                         radius: AccuracyArray[index],
@@ -289,6 +336,8 @@
           }).addTo(map).bringToFront();
           //reformat data for hotline
 
+        currentPath = L.Polyline.fromEncoded("g|y}Hsczh@DPN`@HRTTLLZVXPJAFe@Dy@Bk@LgA@KLFJFJBJBHAJc@Rc@Na@Lq@Hi@Jg@IQKQw@i@OUOQKQ",{}).addTo(map);
+        createPath()
           var routeInstructions = []
           var totalLength = 0
         var LonLatArray = []
